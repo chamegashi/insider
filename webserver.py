@@ -48,6 +48,52 @@ def check_all_voted():
     
     return result
 
+def check_result():
+    players_data = get_players_data()
+    result_data = {}
+
+    for player in players_data:
+        result_data[player['name']] = 0
+
+    max_num = 0
+    for player in players_data:
+        result_data[player['voted']] = result_data[player['voted']] + 1
+        if(max_num < result_data[player['voted']]):
+            max_num = max_num + 1
+    
+    print(result_data)
+
+    answers = []
+    for player in players_data:
+        if(max_num == result_data[player['name']]):
+            answers.append(player['name'])
+
+    if(len(answers) == 1):
+        if(check_insider(answers[0])):
+            return True
+        else:
+            return False
+    
+    for player in players_data:
+        if(player['role'] == 'master'):
+            if(check_insider(player['voted'])):
+                return True
+            else:
+                return False
+
+
+    return False
+        
+
+def check_insider(name):
+    players = get_players_data()
+    for player in players:
+        if(player['name'] == name):
+            if(player['role'] == 'insider'):
+                return True
+    
+    return False
+
 def new_client(client, server):
   logger.info('New client {}:{} has joined.'.format(client['address'][0], client['address'][1]))
   clients.append(client)
@@ -128,23 +174,47 @@ def message_received(client, server, message):
 
     elif (mes['status'] == 'waitResult'):
 
-        if(check_all_voted()):
+        if(check_result()):
             ret = {
-                'next_status': 'waitResult',
+                'next_status': 'result',
+                'data': get_players_data(),
+                'result': True
             }
-            for i in range(len(clients)):
-                server.send_message(clients[i], json.dumps(ret))
-        
+            server.send_message(client, json.dumps(ret))
         else:
             ret = {
-                'next_status': 'vote',
+                'next_status': 'result',
                 'data': get_players_data(),
-                'reserve': True
+                'result': False
             }
             server.send_message(client, json.dumps(ret))
 
+    elif(mes['status'] == 'restart'):
+        for client in clients:
+            client['status'] = 'ready'
+            client['role'] = 'none'
+            client['voted'] = 'none'
+        
+        role_list = []
+        for i in range(len(clients)):
+            if(i == 0):
+                role_list.append('master')
+            elif(i == 1):
+                role_list.append('insider')
+            else:
+                role_list.append('people')
+        
+        random.shuffle(role_list)
+        answer = "布団"
 
-
+        for i in range(len(clients)):
+            clients[i]['role'] = role_list[i]
+            ret = {
+                'next_status' : 'start',
+                'data': get_player_data(i),
+                'answer': answer
+            }
+            server.send_message(clients[i], json.dumps(ret))
 
 # Main
 if __name__ == "__main__":

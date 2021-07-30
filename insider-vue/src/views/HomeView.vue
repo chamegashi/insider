@@ -72,7 +72,6 @@
           <label>
             <p class="text-xl">{{player.name}}</p>
             <input type="radio" :value="player.name" v-model="selected">
-            <p>{{selected}}</p>
           </label>
         </div>
       </div>
@@ -94,7 +93,32 @@
       </button>
     </div>
 
-    <!-- <HelloWorld msg="Welcome to Your Vue.js + TypeScript App"/> -->
+
+    <div class="text-center" v-if="status === 'result'">
+      <p class="text-3xl m-5">結果発表</p>
+      <div v-if="gameResult" class="pb-8">
+        <p class="text-3xl m-5 p-4 text-blue-700">庶民側の勝利！</p>
+        <div v-for="player in players" :key="player.name">
+          <p class="text-xl m-2">
+            <span v-if="player.role === 'master'" >(マスター) </span>
+            <span v-if="player.role === 'insider'" >(インサイダー) </span>
+            {{player.name + " => " + player.voted}}</p>
+        </div>
+      </div>
+      <div v-else class="bg-red-700 text-white pb-8">
+        <p class="text-3xl m-5 p-4">インサイダーの勝利！</p>
+        <div v-for="player in players" :key="player.name">
+          <p class="text-xl m-2">
+            <span v-if="player.role === 'master'" >(マスター) </span>
+            <span v-if="player.role === 'insider'" >(インサイダー) </span>
+            {{player.name + " => " + player.voted}}</p>
+        </div>
+      </div>
+      <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded m-10" @click="restart">
+        もう一回する！
+      </button>
+    </div>
+
   </div>
 </template>
 
@@ -106,7 +130,7 @@ interface Player {
   name: string;
   status: string;
   role: string;
-  vote: string;
+  voted: string;
 }
 
 export default defineComponent({
@@ -120,6 +144,7 @@ export default defineComponent({
     const answer = ref<string>();
     const selected = ref<string>();
     const reserve = ref<boolean>();
+    const gameResult = ref<boolean>();
     const status = ref<string>("login");
 
     const ws = new WebSocket('ws://localhost:12345');
@@ -163,6 +188,13 @@ export default defineComponent({
       ws.send(JSON.stringify(data));
     }
 
+    const restart = () => {
+      const data = {
+        status: 'restart',
+      }
+      ws.send(JSON.stringify(data));
+    }
+
     ws.onmessage = (event) => {
       const obj = JSON.parse(event.data)
       if(obj['next_status'] === "ready"){
@@ -185,28 +217,13 @@ export default defineComponent({
       if(obj['next_status'] === "waitResult"){
         status.value = 'waitResult';
       }
-    }
 
-    players.value = [
-      {
-        name: "name1",
-        status: "string",
-        role: "string",
-        vote: "string",
-      },
-      {
-        name: "name2",
-        status: "string",
-        role: "string",
-        vote: "string",
-      },
-      {
-        name: "name3",
-        status: "string",
-        role: "string",
-        vote: "string",
-      },
-    ]
+      if(obj['next_status'] === "result"){
+        status.value = 'result';
+        players.value = obj.data;
+        gameResult.value = obj.result;
+      }
+}
 
     return {
       name,
@@ -215,11 +232,13 @@ export default defineComponent({
       answer,
       selected,
       reserve,
+      gameResult,
       join,
       start,
       vote,
       waitResult,
       result,
+      restart,
       ws,
       status
     }
