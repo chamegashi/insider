@@ -147,7 +147,7 @@ export default defineComponent({
     const gameResult = ref<boolean>();
     const status = ref<string>("login");
 
-    const ws = new WebSocket('ws://localhost:12345');
+    const ws = new WebSocket('wss://87422686d3d4.ngrok.io');
 
     const join = () => {
       if(name.value){
@@ -158,6 +158,14 @@ export default defineComponent({
         ws.send(JSON.stringify(data));
       }
     }
+
+    setInterval(() => {
+      console.log("done")
+      const data = {
+        status: 'interval'
+      }
+      ws.send(JSON.stringify(data));
+    }, 60000);
 
     const start = () => {
       const data = {

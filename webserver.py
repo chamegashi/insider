@@ -2,7 +2,7 @@ import random
 import json
 import logging
 from websocket_server import WebsocketServer
- 
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
@@ -12,12 +12,18 @@ logger.addHandler(handler)
 clients = []
 answer = ""
 
+words = ["布団", "廊下", "教科書", "会議室",
+"部屋", "トイレ", "銀行", "郵便局","図書館", "美術館", "飛行機", "刺身", "天ぷら", "うどん",
+"そば", "ムー大陸", "柔道", "剣道", "サッカー", "バレー", "弓道", "野球", "スマブラ", "ポケモン", "パソコン", 
+"電子レンジ", "ポテトチップス", "割りばし", "ウマ娘", "FGO", "カメラ", "CD", "おでん", "温泉", "体温計", "椅子", 
+"水筒", "ビール", "日本酒", "唐揚げ", "オリンピック", "入学式", "卒業式", "マンガ", "猫", "犬"]
+
 # Callback functions
 
 def get_players_data():
     ret = []
     for client in clients:
-        if(client['name']):
+        if(len(client) > 3):
             ret.append({
                 'name': client['name'],
                 'status': client['status'],
@@ -29,7 +35,7 @@ def get_players_data():
 
 def get_player_data(index):
     ret = {}
-    if(clients[index]['name']):
+    if(len(clients[index]) > 3):
         ret = {
             'name': clients[index]['name'],
             'status': clients[index]['status'],
@@ -98,13 +104,12 @@ def new_client(client, server):
   logger.info('New client {}:{} has joined.'.format(client['address'][0], client['address'][1]))
   clients.append(client)
   print(clients)
- 
+
 def client_left(client, server):
     logger.info('Client {}:{} has left.'.format(client['address'][0], client['address'][1]))
     index = next((index for (index, d) in enumerate(clients) if d['id'] == client['id']), None)
     clients.pop(index)
 
- 
 def message_received(client, server, message):
     logger.info('Message "{}" has been received from {}:{}'.format(message, client['address'][0], client['address'][1]))
     mes = json.loads(message)
@@ -133,7 +138,8 @@ def message_received(client, server, message):
                 role_list.append('people')
         
         random.shuffle(role_list)
-        answer = "布団"
+        random.shuffle(words)
+        answer = words[0]
 
         for i in range(len(clients)):
             clients[i]['role'] = role_list[i]
@@ -205,7 +211,8 @@ def message_received(client, server, message):
                 role_list.append('people')
         
         random.shuffle(role_list)
-        answer = "布団"
+        random.shuffle(words)
+        answer = words[0]
 
         for i in range(len(clients)):
             clients[i]['role'] = role_list[i]
